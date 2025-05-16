@@ -30,19 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['xml_file'])) {
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>DANFE - Visualizador</title>
+  <title>DANFE Comercial</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { font-size: 12px; }
     .box { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
     .titulo { font-weight: bold; text-transform: uppercase; background: #eee; padding: 5px; margin-bottom: 5px; }
+    .linha { border-top: 1px solid #ccc; margin: 5px 0; }
     .print-btn { position: fixed; top: 10px; right: 10px; z-index: 999; }
+    .nf-table th, .nf-table td { font-size: 11px; padding: 4px; }
     svg#barcode { margin-top: 10px; }
   </style>
 </head>
 <body class="container">
 
-  <h2 class="my-3">Visualizador de DANFE</h2>
+  <h2 class="my-3">DANFE - Documento Auxiliar da Nota Fiscal Eletrônica</h2>
 
   <form method="POST" enctype="multipart/form-data" class="mb-4">
     <input type="file" name="xml_file" accept=".xml" class="form-control mb-2" required>
@@ -77,19 +79,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['xml_file'])) {
     </div>
 
     <div class="box">
-      <div class="titulo">Dados da NF-e</div>
-      <p>Número: <strong><?= $ide->nNF ?></strong> | Série: <?= $ide->serie ?> | Emissão: <?= $ide->dhEmi ?><br>
-         Natureza da operação: <?= $ide->natOp ?><br>
-         Tipo: <?= $ide->tpNF == 1 ? 'Saída' : 'Entrada' ?>
-      </p>
-    </div>
-
-    <div class="box">
-      <div class="titulo">Produtos/Serviços</div>
-      <table class="table table-bordered table-sm">
-        <thead>
+      <div class="titulo">Produtos / Serviços</div>
+      <table class="table table-bordered table-sm nf-table">
+        <thead class="table-light">
           <tr>
-            <th>Código</th><th>Descrição</th><th>Qtd</th><th>Unit</th><th>Total</th>
+            <th>Código</th><th>Descrição</th><th>NCM</th><th>CFOP</th><th>UN</th>
+            <th>Qtd</th><th>V. Unit</th><th>Desc</th><th>V. Total</th>
           </tr>
         </thead>
         <tbody>
@@ -97,8 +92,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['xml_file'])) {
           <tr>
             <td><?= $item->prod->cProd ?></td>
             <td><?= $item->prod->xProd ?></td>
+            <td><?= $item->prod->NCM ?></td>
+            <td><?= $item->prod->CFOP ?></td>
+            <td><?= $item->prod->uCom ?></td>
             <td><?= $item->prod->qCom ?></td>
             <td><?= formatMoney($item->prod->vUnCom) ?></td>
+            <td><?= formatMoney($item->prod->vDesc ?? 0) ?></td>
             <td><?= formatMoney($item->prod->vProd) ?></td>
           </tr>
         <?php endforeach; ?>
@@ -109,10 +108,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['xml_file'])) {
     <div class="box">
       <div class="titulo">Totais</div>
       <p>
-        Valor Produtos: <?= formatMoney($total->vProd) ?><br>
+        Base ICMS: <?= formatMoney($total->vBC) ?> |
+        ICMS: <?= formatMoney($total->vICMS) ?> |
+        Frete: <?= formatMoney($total->vFrete) ?> |
         Desconto: <?= formatMoney($total->vDesc) ?><br>
-        Frete: <?= formatMoney($total->vFrete) ?><br>
-        Valor Total NF: <strong><?= formatMoney($total->vNF) ?></strong>
+        IPI: <?= formatMoney($total->vIPI) ?> |
+        Total Produtos: <?= formatMoney($total->vProd) ?> |
+        <strong>Valor Total NF: <?= formatMoney($total->vNF) ?></strong>
       </p>
     </div>
 
@@ -123,7 +125,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['xml_file'])) {
   <?php endif; ?>
 
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-  
   <?php if (isset($chave)): ?>
   <script>
     JsBarcode("#barcode", "<?= $chave ?>", {
